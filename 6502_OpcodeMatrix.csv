@@ -1,0 +1,151 @@
+﻿OPCODE,INST,ADDRESSING,BYTES,CYCLES,PAGE-X,ON-PAGE,FLAGS,NAME
+00,BRK,imp,1,7,,,---I--,Break and Force Interrupt
+01,ORA,ind-x,2,6,,,NZ----,Logical OR
+05,ORA,zp,2,3,,,NZ----,Logical OR
+06,ASL,zp,2,5,,,NZC---,Arithmetic Shift Left
+08,PHP,imp,1,3,,,------,Push Status on Stack
+09,ORA,imm,2,2,,,NZ----,Logical OR
+0A,ASL,A,1,2,,,NZC---,Arithmetic Shift Left
+0D,ORA,abs,3,4,,,NZ----,Logical OR
+0E,ASL,abs,3,6,,,NZC---,Arithmetic Shift Left
+10,BPL,rel,2,2,2,1,------,Branch on Positive
+11,ORA,ind-y,2,5,1,,NZ----,Logical OR
+15,ORA,zp-x,2,4,,,NZ----,Logical OR
+16,ASL,zp-x,2,6,,,NZC---,Arithmetic Shift Left
+18,CLC,imp,1,2,,,--C---,Clear Carry Flag
+19,ORA,abs-y,3,4,1,,NZ----,Logical OR
+1D,ORA,abs-x,3,4,1,,NZ----,Logical OR
+1E,ASL,abs-x,3,7,,,NZC---,Arithmetic Shift Left
+20,JSR,abs,3,6,,,------,"Jump, Save Return"
+21,AND,ind-x,2,6,,,NC----,Logical AND
+24,BIT,zp,2,3,,,NZ---V,"Test Bits 7, 6"
+25,AND,zp,2,3,,,NC----,Logical AND
+26,ROL,zp,2,5,,,NZC---,Rotate Left (Bit to Carry)
+28,PLP,imp,1,4,,,NZ----,Pull Status from Stack
+29,AND,imm,2,2,,,NC----,Logical AND
+2A,ROL,A,1,2,,,NZC---,Rotate Left (Bit to Carry)
+2C,BIT,abs,3,4,,,NZ---V,"Test Bits 7, 6"
+2D,AND,abs,3,4,,,NC----,Logical AND
+2E,ROL,abs,3,6,,,NZC---,Rotate Left (Bit to Carry)
+30,BMI,rel,2,2,2,1,------,Branch on Negative
+31,AND,ind-y,2,5,1,,NC----,Logical AND
+35,AND,zp-x,2,4,,,NC----,Logical AND
+36,ROL,zp-x,2,6,,,NZC---,Rotate Left (Bit to Carry)
+38,SEC,imp,1,2,,,--C---,Set Carry Flag
+39,AND,abs-y,3,4,1,,NC----,Logical AND
+3D,AND,abs-x,3,4,1,,NC----,Logical AND
+3E,ROL,abs-x,3,7,,,NZC---,Rotate Left (Bit to Carry)
+40,RTI,imp,1,6,,,NZCIDV,Return from Interrupt
+41,EOR,ind-x,2,6,,,NZ----,Exclusive OR to A
+45,EOR,zp,2,3,,,NZ----,Exclusive OR to A
+46,LSR,zp,2,5,,,NZC---,Logical Shift Right
+48,PHA,imp,1,3,,,------,Push A on Stack
+49,EOR,imm,2,2,,,NZ----,Exclusive OR to A
+4A,LSR,A,1,2,,,NZC---,Logical Shift Right
+4C,JMP,abs,3,3,,,------,Jump
+4D,EOR,abs,3,4,,,NZ----,Exclusive OR to A
+4E,LSR,abs,3,6,,,NZC---,Logical Shift Right
+50,BVC,rel,2,2,2,1,------,Branch on Overflow Clear
+51,EOR,ind-y,2,5,1,,NZ----,Exclusive OR to A
+55,EOR,zp-x,2,4,,,NZ----,Exclusive OR to A
+56,LSR,zp-x,2,6,,,NZC---,Logical Shift Right
+58,CLI,imp,1,2,,,---I--,Clear Interrupt Disable
+59,EOR,abs-y,3,4,1,,NZ----,Exclusive OR to A
+5D,EOR,abs-x,3,4,1,,NZ----,Exclusive OR to A
+5E,LSR,abs-x,3,7,,,NZC---,Logical Shift Right
+60,RTS,imp,1,6,,,------,Return from Subroutine
+61,ADC,ind-x,2,6,,,NZC--V,Add with Carry
+65,ADC,zp,2,3,,,NZC--V,Add with Carry
+66,ROR,zp,2,5,,,NZC---,Rotate Right (Bit to Carry)
+68,PLA,imp,1,4,,,NZ----,Pull A from Stack
+69,ADC,imm,2,2,,,NZC--V,Add with Carry
+6A,ROR,A,1,2,,,NZC---,Rotate Right (Bit to Carry)
+6C,JMP,ind,3,5,,,------,Jump
+6D,ADC,abs,3,4,,,NZC--V,Add with Carry
+6E,ROR,abs,3,6,,,NZC---,Rotate Right (Bit to Carry)
+70,BVS,rel,2,2,2,1,------,Branch on Overflow Set
+71,ADC,ind-y,2,5,,,NZC--V,Add with Carry
+75,ADC,zp-x,2,4,,,NZC--V,Add with Carry
+76,ROR,zp-x,2,6,,,NZC---,Rotate Right (Bit to Carry)
+78,SEI,imp,1,2,,,---I--,Set Interrupt Disable Flag
+79,ADC,abs-y,3,4,,,NZC--V,Add with Carry
+7D,ADC,abs-x,3,4,,,NZC--V,Add with Carry
+7E,ROR,abs-x,3,7,,,NZC---,Rotate Right (Bit to Carry)
+81,STA,ind-x,2,6,,,------,Store A in Memory
+84,STY,zp,2,3,,,------,Store Y in Memory
+85,STA,zp,2,3,,,------,Store A in Memory
+86,STX,zp,2,3,,,------,Store X in Memory
+88,DEY,imp,1,2,,,NZ----,Decrement Y
+8A,TXA,imp,1,2,,,NZ----,Transfer X to A
+8C,STY,abs,3,4,,,------,Store Y in Memory
+8D,STA,abs,3,4,,,------,Store A in Memory
+8E,STX,abs,3,4,,,------,Store X in Memory
+90,BCC,rel,2,2,,,------,Branch on Carry Clear
+91,STA,ind-y,2,6,,,------,Store A in Memory
+94,STY,zp-x,2,4,,,------,Store Y in Memory
+95,STA,zp-x,2,4,,,------,Store A in Memory
+96,STX,zp-y,2,4,,,------,Store X in Memory
+98,TYA,imp,1,2,,,NZ----,Transfer Y to A
+99,STA,abs-y,3,5,,,------,Store A in Memory
+9A,TXS,imp,1,2,,,------,Transfer X to Stack Pointer
+9D,STA,abs-x,3,5,,,------,Store A in Memory
+A0,LDY,imm,2,2,,,NZ----,Load Y
+A1,LDA,ind-x,2,6,,,NZ----,Load A
+A2,LDX,imm,2,2,,,NZ----,Load X
+A4,LDY,zp,2,3,,,NZ----,Load Y
+A5,LDA,zp,2,3,,,NZ----,Load A
+A6,LDX,zp,2,3,,,NZ----,Load X
+A8,TAY,imp,1,2,,,NZ----,Transfer A to Y
+A9,LDA,imm,2,2,,,NZ----,Load A
+AA,TAX,imp,1,2,,,NZ----,Transfer A to X
+AC,LDY,abs,3,4,,,NZ----,Load Y
+AD,LDA,abs,2,4,,,NZ----,Load A
+AE,LDX,abs,3,4,,,NZ----,Load X
+B0,BCS,rel,2,2,2,1,------,Branch on Carry Set
+B1,LDA,ind-y,2,5,1,,NZ----,Load A
+B4,LDY,zp-x,2,4,,,NZ----,Load Y
+B5,LDA,zp-x,2,4,,,NZ----,Load A
+B6,LDX,zp-y,2,4,,,NZ----,Load X
+B8,CLV,imp,1,2,,,-----V,Clear Overflow Flag
+B9,LDA,abs-y,3,4,1,,NZ----,Load A
+BA,TSX,imp,1,2,,,NZ----,Transfer Stack Pointer to X
+BC,LDY,abs-x,3,4,1,,NZ----,Load Y
+BD,LDA,abs-x,3,4,1,,NZ----,Load A
+BE,LDX,abs-y,3,4,1,,NZ----,Load X
+C0,CPY,imm,2,2,,,NZC---,Compare to Y
+C1,CMP,ind-x,2,6,,,NZC---,Compare to A
+C4,CPY,zp,2,3,,,NZC---,Compare to Y
+C5,CMP,zp,2,3,,,NZC---,Compare to A
+C6,DEC,zp,2,5,,,NZ----,Decrement Memory
+C8,INY,imp,1,2,,,NZ----,Increment Y
+C9,CMP,imm,2,2,,,NZC---,Compare to A
+CA,DEX,imp,1,2,,,NZ----,Decrement X
+CC,CPY,abs,3,4,,,NZC---,Compare to Y
+CD,CMP,abs,3,4,,,NZC---,Compare to A
+CE,DEC,abs,3,6,,,NZ----,Decrement Memory
+D0,BNE,rel,2,2,2,1,------,Branch on Not Zero
+D1,CMP,ind-y,2,5,1,,NZC---,Compare to A
+D5,CMP,zp-x,2,4,,,NZC---,Compare to A
+D6,DEC,zp-x,2,6,,,NZ----,Decrement Memory
+D8,CLD,imp,1,2,,,----D-,Clear Decimal Mode
+D9,CMP,abs-y,3,4,1,,NZC---,Compare to A
+DD,CMP,abs-x,3,4,1,,NZC---,Compare to A
+DE,DEC,abs-x,3,7,,,NZ----,Decrement Memory
+E0,CPX,imm,,,,,NZC---,Compare to X
+E1,SBC,ind-x,2,6,,,NZC--V,Subtract with Borrow
+E5,SBC,zp,2,3,,,NZC--V,Subtract with Borrow
+E6,INC,zp,2,5,,,NZ----,Increment Memory
+E8,INX,imp,1,2,,,NZ----,Increment X
+E9,SBC,imm,2,2,,,NZC--V,Subtract with Borrow
+EA,NOP,imp,1,2,,,------,No Operation
+EC,CPX,abs,,,,,NZC---,Compare to X
+ED,SBC,abs,3,4,,,NZC--V,Subtract with Borrow
+EE,INC,abs-x,3,6,,,NZ----,Increment Memory
+F0,BEQ,rel,2,2,2,1,------,Branch on Zero
+F1,SBC,ind-y,2,5,1,,NZC--V,Subtract with Borrow
+F5,SBC,zp-x,2,4,,,NZC--V,Subtract with Borrow
+F6,INC,zp-x,2,6,,,NZ----,Increment Memory
+F8,SED,imp,1,2,,,----D-,Set Decimal Flag
+F9,SBC,abs-y,3,4,1,,NZC--V,Subtract with Borrow
+FD,SBC,abs-x,3,4,1,,NZC--V,Subtract with Borrow
+FE,INC,abs-x,3,7,,,NZ----,Increment Memory
