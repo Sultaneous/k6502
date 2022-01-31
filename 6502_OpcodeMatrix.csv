@@ -1,4 +1,4 @@
-﻿OPCODE,INST,ADDRESSING,BYTES,CYCLES,PAGE-X,ON-PAGE,FLAGS,NAME
+OPCODE,INST,ADDRESSING,BYTES,CYCLES,PAGE-X,ON-PAGE,FLAGS,ACTION
 00,BRK,imp,1,7,,,---I--,Break and Force Interrupt
 01,ORA,ind-x,2,6,,,NZ----,Logical OR
 05,ORA,zp,2,3,,,NZ----,Logical OR
@@ -17,23 +17,23 @@
 1D,ORA,abs-x,3,4,1,,NZ----,Logical OR
 1E,ASL,abs-x,3,7,,,NZC---,Arithmetic Shift Left
 20,JSR,abs,3,6,,,------,"Jump, Save Return"
-21,AND,ind-x,2,6,,,NC----,Logical AND
+21,AND,ind-x,2,6,,,NZ----,Logical AND
 24,BIT,zp,2,3,,,NZ---V,"Test Bits 7, 6"
-25,AND,zp,2,3,,,NC----,Logical AND
+25,AND,zp,2,3,,,NZ----,Logical AND
 26,ROL,zp,2,5,,,NZC---,Rotate Left (Bit to Carry)
 28,PLP,imp,1,4,,,NZ----,Pull Status from Stack
-29,AND,imm,2,2,,,NC----,Logical AND
+29,AND,imm,2,2,,,NZ----,Logical AND
 2A,ROL,A,1,2,,,NZC---,Rotate Left (Bit to Carry)
 2C,BIT,abs,3,4,,,NZ---V,"Test Bits 7, 6"
-2D,AND,abs,3,4,,,NC----,Logical AND
+2D,AND,abs,3,4,,,NZ----,Logical AND
 2E,ROL,abs,3,6,,,NZC---,Rotate Left (Bit to Carry)
 30,BMI,rel,2,2,2,1,------,Branch on Negative
-31,AND,ind-y,2,5,1,,NC----,Logical AND
-35,AND,zp-x,2,4,,,NC----,Logical AND
+31,AND,ind-y,2,5,1,,NZ----,Logical AND
+35,AND,zp-x,2,4,,,NZ----,Logical AND
 36,ROL,zp-x,2,6,,,NZC---,Rotate Left (Bit to Carry)
 38,SEC,imp,1,2,,,--C---,Set Carry Flag
-39,AND,abs-y,3,4,1,,NC----,Logical AND
-3D,AND,abs-x,3,4,1,,NC----,Logical AND
+39,AND,abs-y,3,4,1,,NZ----,Logical AND
+3D,AND,abs-x,3,4,1,,NZ----,Logical AND
 3E,ROL,abs-x,3,7,,,NZC---,Rotate Left (Bit to Carry)
 40,RTI,imp,1,6,,,NZCIDV,Return from Interrupt
 41,EOR,ind-x,2,6,,,NZ----,Exclusive OR to A
