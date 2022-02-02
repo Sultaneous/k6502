@@ -18,6 +18,7 @@ from gamzia.timer import Timer
 from gamzia.datastructures import Stack, Queue, BinaryTree, TRAVERSALS
 import os
 import sys
+import io
 
 
 ### DATA ###
@@ -45,6 +46,7 @@ DEF_LOGFILE   = "kdis6502.log" # Default log file
 DEF_TEST      = False          # Run test cases?
 DEF_HASHEADER = False          # Yes to 2 byte location header?
 DEF_OUTEXT    = ".asm"         # Default output extension
+DEF_LOGOPEN   = False          # Monitor on log file status
 
 
 ### CODE ####
@@ -56,12 +58,15 @@ DEF_OUTEXT    = ".asm"         # Default output extension
 # on this.
 # TODO: Add in your configuration properties in this class.
 class Config:
-   def __init__(self):
+   def __init__(self, context):
       # These are the public properties
+      self.context=context
       self.isVerbose=DEF_VERBOSE
       self.isOverwrite=DEF_OVERWRITE
+      self.isLogfileOpen=DEF_LOGOPEN
       self.isLogging=DEF_LOGGING
       self.logfile=DEF_LOGFILE
+      self.logfileHandle=None
       self.hasHeader=DEF_HASHEADER
       self.inputfile=""
       self.outputfile=""
@@ -79,8 +84,8 @@ class Config:
 
    # Convenience method reporting test status
    def isTest(self):
-      return (self._TEST)   
-   
+      return (self._TEST)
+
    # Uses reflection to create a dictionary of public atributes
    # Skips any methods or functions or internals.
    def toDictionary(self, showPrivate=False):
@@ -185,19 +190,19 @@ class Kdis6502:
    # Returns the number of bytes required by this control byte
    def getBytes(self, controlByte):
       if self.isLegal(controlByte):
-         return self.opcodes[controlByte][2]
+         return int(self.opcodes[controlByte][2])
       else:
          return 0
 
    # Returns the number of cycles required by this control byte
    def getCycles(self, controlByte):
       if self.isLegal(controlByte):
-         return self.opcodes[controlByte][3]
+         return int(self.opcodes[controlByte][3])
       else:
          return 0
 
    # Returns the instruction name (opcode) of this control byte
-   def getInstruction(self, controlByte):
+   def getOpcode(self, controlByte):
       if self.isLegal(controlByte):
          return self.opcodes[controlByte][0]
       else:
@@ -217,13 +222,23 @@ class Kdis6502:
       else:
          return ""
 
-   # Returns the contol byte memory model
+   # Returns the contol byte flags affected string
    def getFlags(self, controlByte):
       if self.isLegal(controlByte):
          return self.opcodes[controlByte][4]
       else:
          return ""
 
+   # Returns a hex string from 2 endian bytes, zero pads front; uppercase
+   # Returns from $0000 to $FFFF
+   @staticmethod
+   def getHexFromEndian(endianBytes):
+      value=hex(int.from_bytes(endianBytes, "little")).upper().replace("0X","")
+      while len(value)<4:
+         value="0"+value
+      value="$"+value
+      return(value)
+      
    # Disassembles an input binary to a text listing file
    def disassemble(self, config):
       note (f"Disassembling binary: {config.inputfile} to listing file: {config.outputfile}")
@@ -231,17 +246,37 @@ class Kdis6502:
       note (f"Reading binary input from {config.inputfile}")
       with (open(config.inputfile, 'rb')) as file:
          data = file.read(os.path.getsize(config.inputfile))
+         
+      # File data is cached; file is closed; create byte stream for work:
+      bs=io.BytesIO(data)
 
-      cnt=len(data)
-      index=0
+      count=len(data)
+      note("Opened binary as byte stream of length {count}")
 
       if (config.hasHeader):
-         blo=int(data[index])
-         bhi=int(data[index+1])
-         index+=2
-         address=hex(bhi*256+blo).upper().replace("0X", "$")
+         address=Kdis6502.getHexFromEndian(bs.read(2))
          print(f"   *= {address}")
-      
+
+      loop=1
+      while loop<10:
+         # 1. Read 1 byte, find out how many more to read
+         controlByte=str(bs.read(1)).rstrip().upper()[4:6]
+         bCount=self.getBytes(controlByte)-1
+         note(f"Found control byte {controlByte} using {bCount} bytes")
+
+         # 2. Read and store any extra bytes (from 1-2)
+         blo=0;
+         bhi=0;
+         if (bCount>0):
+            blo=int.from_bytes(bs.read(1), "little")
+         if (bCount>1):
+            bhi=int.from_bytes(bs.read(1), "little")
+
+         # 3. Decode opcode
+         opc=self.getOpcode(controlByte)
+         notex(f"{opc} {controlByte} {blo} {bhi}")
+         print (f"   {opc}")
+         loop+=1
       
 
    # Implements len routine for class, based on number of opcodes
@@ -328,12 +363,14 @@ Options
 
 # Outputs a message for a serious error, and terminates program
 # Use this for fatal errors only!
-def error(message):
+# Set 'forceNoLog' to true if error message should NOT be logged;
+# if, for example, the error occurred in the logging method.
+def error(message, forceNoLog=False):
    print(f"{C.clr}An error has occurred!");
    print(f"{C.clm}{message}{C.off}")
    print(flush=True)
    try:
-      if (config.isLogging):
+      if (config.isLogging) and not forceNoLog:
          log(message)
       # Close any sockets, resources, etc... here
    except Exception as e:
@@ -348,23 +385,33 @@ def error(message):
 # Format of a log is:
 # [time since program start] message
 def log(message):
-   global FLAG_LOGOPEN, logfilehandle
-   if not FLAG_LOGOPEN:
-      logfilehandle=open(config.logfile, "at+")
-      FLAG_LOGOPEN=True
-      log.logtimer=Timer()
-      log.logtimer.start()
-      now=datetime.datetime.now()
-      header=f"\n******************************************************************************\n" \
-             f"Log File for {C.cstrip(APP_TAG)}" \
-             f"On: {now:%Y-%m-%d %H:%M}\n" \
-             f"******************************************************************************\n"
-      logfilehandle.write(f"{header}\n")
-   logmsg=f"[{log.logtimer.peek():.5f}] {C.cstrip(message)}"
-   if (not logmsg.endswith("\n")):
-      logmsg=logmsg+"\n"
-   logfilehandle.write(f"{logmsg}")
-   logfilehandle.flush()
+   if not config.isLogging:
+      return
+   
+   if not config.isLogfileOpen:
+      try:
+         config.logfileHandle=open(config.logfile, "at+")
+         config.isLogfileOpen=True
+         log.logtimer=Timer()
+         log.logtimer.start()
+         now=datetime.datetime.now()
+         header=f"\n****************************************************************************************\n" \
+                f"Log File for {C.cstrip(APP_TAG)} \n" \
+                f"On: {now:%Y-%m-%d @ %H:%M}\n" \
+                f"****************************************************************************************\n"
+         config.logfileHandle.write(f"{header}\n")
+      except Exception as e:
+         error(e, forceNoLog=True)
+
+   # File is already created, append
+   try:
+      logmsg=f"[{log.logtimer.peek():.5f}] {C.cstrip(message)}"
+      if (not logmsg.endswith("\n")):
+         logmsg=logmsg+"\n"
+      config.logfileHandle.write(f"{logmsg}")
+      config.logfileHandle.flush()
+   except Exception as e:
+      error(e, forceNoLog=True)
 
 # "Pips up" to let you know something minor happened, doesn't impact
 # program flow. This method is intended for non-fatal errors, either
@@ -482,7 +529,7 @@ def parseCommandLine():
 def main():
    # Create our global configuration object
    global config
-   config=Config()
+   config=Config("K Diassembler Context")
 
    # Parse command line arguments
    parseCommandLine()
