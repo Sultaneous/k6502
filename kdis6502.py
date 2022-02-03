@@ -274,8 +274,12 @@ class Kdis6502:
 
          # 3. Decode opcode
          opc=self.getOpcode(controlByte)
-         notex(f"{opc} {controlByte} {blo} {bhi}")
-         print (f"   {opc}")
+         if bCount==2:
+            notex(f"=> {opc} {controlByte} {hex(blo)} {bhi}")
+         elif bCount==1:
+            notex(f"=> {opc} {controlByte} {blo}")
+         else:
+            notex(f"=> {opc} {controlByte}")
          loop+=1
       
 
@@ -378,6 +382,7 @@ def error(message, forceNoLog=False):
    finally:
       exit()
 
+# Refactor target: gamzia.logging
 # Outputs a message to a log file.
 # Strips the ANSI colour codes out of the string to stop log clutter.
 # Caches file handle so that it is only opened once, and closed on exit.
@@ -509,16 +514,18 @@ def parseCommandLine():
    # Options handled, now handle the one or more args 
    fileargs=[]
    for arg in args:
-      # TODO: Capture args, validate
+      # Capture args, validate
       fileargs.append(arg);
 
    if len(fileargs)==0:
       error("Please specify input 6502 binary file.")
-      
+
+   # Input file is first arg; optional output file is second arg.
    config.inputfile=fileargs[0]
    if (len(fileargs)>1):
       config.outputfile=fileargs[1]
    else:
+      # TODO: This fails on a file with multiple '.' in filename
       preamble=config.inputfile.split('.')
       config.outputfile=preamble[0] + DEF_OUTEXT
 
