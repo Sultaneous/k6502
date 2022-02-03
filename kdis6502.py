@@ -25,6 +25,7 @@ import io
 
 argv=sys.argv
 argc=len(argv)
+INDENT=" "*5
 
 # App Info Constants
 APP_NAME    = "Kdis6502"
@@ -239,49 +240,7 @@ class Kdis6502:
       value="$"+value
       return(value)
       
-   # Disassembles an input binary to a text listing file
-   def disassemble(self, config):
-      note (f"Disassembling binary: {config.inputfile} to listing file: {config.outputfile}")
-
-      note (f"Reading binary input from {config.inputfile}")
-      with (open(config.inputfile, 'rb')) as file:
-         data = file.read(os.path.getsize(config.inputfile))
          
-      # File data is cached; file is closed; create byte stream for work:
-      bs=io.BytesIO(data)
-
-      count=len(data)
-      note("Opened binary as byte stream of length {count}")
-
-      if (config.hasHeader):
-         address=Kdis6502.getHexFromEndian(bs.read(2))
-         print(f"   *= {address}")
-
-      loop=1
-      while loop<10:
-         # 1. Read 1 byte, find out how many more to read
-         controlByte=str(bs.read(1)).rstrip().upper()[4:6]
-         bCount=self.getBytes(controlByte)-1
-         note(f"Found control byte {controlByte} using {bCount} bytes")
-
-         # 2. Read and store any extra bytes (from 1-2)
-         blo=0;
-         bhi=0;
-         if (bCount>0):
-            blo=int.from_bytes(bs.read(1), "little")
-         if (bCount>1):
-            bhi=int.from_bytes(bs.read(1), "little")
-
-         # 3. Decode opcode
-         opc=self.getOpcode(controlByte)
-         if bCount==2:
-            notex(f"=> {opc} {controlByte} {hex(blo)} {bhi}")
-         elif bCount==1:
-            notex(f"=> {opc} {controlByte} {blo}")
-         else:
-            notex(f"=> {opc} {controlByte}")
-         loop+=1
-      
 
    # Implements len routine for class, based on number of opcodes
    def __len__(self):
@@ -449,6 +408,12 @@ def note(message, show=False):
 def notex(message):
    note(message, show=True)
 
+# Convenience routine to output to screen, log file, and output file:
+def slog(message):
+   notex(message)
+   with (open(config.outputfile, "a+")) as file:
+      file.write(message+"\n")
+
 # Parses the command line and gets all options / switches.  These values should
 # be stored in the global configuration structure (class).
 # TODO: Customize switches and options.
@@ -529,8 +494,59 @@ def parseCommandLine():
       preamble=config.inputfile.split('.')
       config.outputfile=preamble[0] + DEF_OUTEXT
 
+   # If we are here, all options and arguments have been parsed;
+   # validate output file.
+   if os.path.exists(config.outputfile) and not config.isOverwrite:
+      error("File already exists. Use --overwrite to overwrite it.")
 
+# Disassembles an input binary to a text listing file
+def disassemble(kdis, config):
+   note (f"Disassembling binary: {config.inputfile} to listing file: {config.outputfile}")
 
+   note (f"Reading binary input from {config.inputfile}")
+   file=open(config.inputfile, 'rb')
+      #data = file.read(os.path.getsize(config.inputfile))
+      
+   # File data is cached; file is closed; create byte stream for work:
+   bs=io.BytesIO(file.read(os.path.getsize(config.inputfile)))
+   note (f"Opened binary as byte stream of length {os.path.getsize(config.inputfile)}")
+
+   if (config.hasHeader):
+      address=Kdis6502.getHexFromEndian(bs.read(2))
+      slog(f"{INDENT}*= {address}")
+
+   controlByte=bs.read(1)
+   while not controlByte==b'':
+      # 1. Read 1 byte, find out how many more to read
+      controlByte=str(controlByte).rstrip().upper()[4:6]
+      bCount=kdis.getBytes(controlByte)-1
+      note(f"Found control byte {controlByte} using {bCount} bytes")
+
+      # 2. Read and store any extra bytes (from 0-2)
+      # Because: 6502 ML instructions are 1-3 bytes
+      blo=0;
+      bhi=0;
+      if (bCount>0):
+         blo=int.from_bytes(bs.read(1), "little")
+      if (bCount>1):
+         bhi=int.from_bytes(bs.read(1), "little")
+
+      # 3. Decode opcode
+      opc=kdis.getOpcode(controlByte)
+      if bCount==2:
+         notex(f"=> {opc} {controlByte} {hex(blo)} {bhi}")
+      elif bCount==1:
+         notex(f"=> {opc} {controlByte} {blo}")
+      else:
+         notex(f"=> {opc} {controlByte}")
+
+      # Read next byte for the while loop condition
+      controlByte=bs.read(1)
+
+   # Close resources
+   note (f"Closing binary input file: {config.inputfile}")
+   file.close()
+   
 ### Program mainline ###
       
 def main():
@@ -552,7 +568,7 @@ def main():
 
    # Construct disassembler engine
    kdis6502=Kdis6502()
-   kdis6502.disassemble(config)
+   disassemble(kdis6502, config)
    
 
    # DEBUGGING
