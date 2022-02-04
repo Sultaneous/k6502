@@ -233,15 +233,98 @@ class Kdis6502:
    # Returns a hex string from 2 endian bytes, zero pads front; uppercase
    # Returns from $0000 to $FFFF
    @staticmethod
-   def getHexFromEndian(endianBytes):
+   def getHexAddress(endianBytes):
       value=hex(int.from_bytes(endianBytes, "little")).upper().replace("0X","")
       while len(value)<4:
          value="0"+value
       value="$"+value
       return(value)
       
-         
+   # Similar to getHexFromEndian, it accepts one byte (0-255) and returns
+   # $00 - $FF.
+   @staticmethod
+   def getHexByte(value):
+      # Constrain
+      param=int.from_bytes(value, "little")
+      if (param>255):
+         return "$FF"
+      elif (param<0):
+         return "$00"
+      
+      result=hex(int.from_bytes(value, "little")).upper().replace("0X","")
+      while len(result)<2:
+         result="0"+result
+      result="$"+result
+      return(result)
 
+   # Given a control byte, plus 0-2 extra bytes of data, produces
+   # ascii output based on addressing format.
+   # controlByte is string, while the rest are of type byte.
+   def decodeByAddressing(self, controlByte, data):
+      if not self.isLegal(controlByte):
+         return ""
+
+      # I would have used match..case here, but 3.10 is not pervasively
+      # deployed on my server distros (Yet).
+      # TODO: When appropriate, update this to match..case statement
+      addressing=self.getAddressing(controlByte)
+      note(f"Addressing mode for {controlByte} is {addressing}.")
+      opc=self.getOpcode(controlByte)
+      result=""
+      if (addressing=="A"):
+         # This is an accumulator operand: OPC A
+         result=f"{opc} A"
+         
+      elif (addressing=="abs"):
+         # Absolute is a fixed memory address: OPC $LLHH
+         result=f"{opc} {self.getHexAddress(data)}"
+         
+      elif (addressing=="abs-x"):
+         # Absolute, X indexed: OPC $LLHH, X
+         result=f"{opc} {self.getHexAddress(data)}, X"
+         
+      elif (addressing=="abs-y"):
+         # Absolute, x indexed: OPC $LLHH, X
+         result=f"{opc} {self.getHexAddress(data)}, Y"
+
+      elif (addressing=="imm"):
+         # Immediaet: OPC #$LL
+         result=f"{opc} {self.getHexByte(data)}"
+         
+      elif (addressing=="imp"):
+         # Implies, 0 bytes: OPC
+         result=f"{opc}"
+
+      elif (addressing=="ind"):
+         # Indirect: OPC ($LLHH)
+         result=f"{opc} ({self.getHexAddress(data)})"
+
+      elif (addressing=="ind-x"):
+         # Indirect, x-indexed zeropage: OPC ($LL, X)
+         result=f"{opc} ({self.getHexByte(data)})"
+
+      elif (addressing=="ind-y"):
+         # Indirect, y-indexed zeropage: OPC ($LL), Y
+         result=f"{opc} ({self.getHexByte(data)}), Y"
+
+      elif (addressing=="rel"):
+         # Relative (offset): OPC $XX
+         result=f"{opc} ({self.getHexByte(data)})"
+
+      elif (addressing=="zp"):
+         # Zero page: OPC $LL
+         result=f"{opc} ({self.getHexByte(data)})"
+
+      elif (addressing=="zp-x"):
+         # Relative (offset): OPC $XX
+         result=f"{opc} ({self.getHexByte(data)}, X)"
+
+      elif (addressing=="zp-y"):
+         # Relative (offset): OPC $XX
+         result=f"{opc} ({self.getHexByte(data)}, Y)"
+
+      return(result)
+      
    # Implements len routine for class, based on number of opcodes
    def __len__(self):
       return(len(self.opcodes))
@@ -498,8 +581,13 @@ def parseCommandLine():
    # validate output file.
    if os.path.exists(config.outputfile) and not config.isOverwrite:
       error("File already exists. Use --overwrite to overwrite it.")
+   elif os.path.exists(config.outputfile) and config.isOverwrite:
+      os.remove(config.outputfile)
 
 # Disassembles an input binary to a text listing file
+# NOTE: Completed data abstraction. This method handles input, output,
+# messaging, and error handling.  The KDis6502 class object handles
+# anything specific to 6502 operations.
 def disassemble(kdis, config):
    note (f"Disassembling binary: {config.inputfile} to listing file: {config.outputfile}")
 
@@ -511,9 +599,23 @@ def disassemble(kdis, config):
    bs=io.BytesIO(file.read(os.path.getsize(config.inputfile)))
    note (f"Opened binary as byte stream of length {os.path.getsize(config.inputfile)}")
 
+   header=f'''
+; **********************************************************************************
+; {config.outputfile[0].upper() + config.outputfile[1:]}
+;
+; This is a disassembly of {config.inputfile}.
+; Disassembled by {APP_NAME} on {datetime.datetime.now():%Y-%m-%d @ %H:%M:%S}
+; **********************************************************************************
+
+'''
+   slog(header)
+
+   # Some 6502 binaries have a 2 byte location header signify code segment start
    if (config.hasHeader):
-      address=Kdis6502.getHexFromEndian(bs.read(2))
+      address=Kdis6502.getHexAddress(bs.read(2))
+      slog(f"{INDENT}; Starting location")
       slog(f"{INDENT}*= {address}")
+      slog("")
 
    controlByte=bs.read(1)
    while not controlByte==b'':
@@ -524,21 +626,11 @@ def disassemble(kdis, config):
 
       # 2. Read and store any extra bytes (from 0-2)
       # Because: 6502 ML instructions are 1-3 bytes
-      blo=0;
-      bhi=0;
-      if (bCount>0):
-         blo=int.from_bytes(bs.read(1), "little")
-      if (bCount>1):
-         bhi=int.from_bytes(bs.read(1), "little")
+      data = bs.read(bCount)
 
-      # 3. Decode opcode
-      opc=kdis.getOpcode(controlByte)
-      if bCount==2:
-         notex(f"=> {opc} {controlByte} {hex(blo)} {bhi}")
-      elif bCount==1:
-         notex(f"=> {opc} {controlByte} {blo}")
-      else:
-         notex(f"=> {opc} {controlByte}")
+      # 4. Based on memory model, format extra bytes
+      result=kdis.decodeByAddressing(controlByte, data)
+      slog(INDENT+result)
 
       # Read next byte for the while loop condition
       controlByte=bs.read(1)
