@@ -606,7 +606,6 @@ def disassemble(kdis, config):
 ; This is a disassembly of {config.inputfile}.
 ; Disassembled by {APP_NAME} on {datetime.datetime.now():%Y-%m-%d @ %H:%M:%S}
 ; **********************************************************************************
-
 '''
    slog(header)
 
