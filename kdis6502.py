@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
 '''
-6502 Disassembler
-220126 KAS
+6502 Disassembler Utility
+
+220126 KAS Created this script
+220203 Finished first version (prototype)
 
 Accepts a 6502 binary file as argument, and disassembles it to 6502 asm.
 For C64 files, specify the location header as an option for proper parsing.
@@ -399,7 +401,13 @@ Syntax:
   {APP_SYNTAX}
 
 Options
-  {C.clm}-h{C.coff}     Binary has a location header (first 2 bytes) {C.clg}(Commodore, etc...){C.coff}
+  {C.clm}-h, --header{C.coff}     {C.clgy}Binary has a location header (first 2 bytes) {C.clg}(Commodore, etc...){C.coff}
+  {C.clm}-o, --overwrite{C.coff}  {C.clgy}Overwrites prior disassembly file{C.coff}
+  {C.clm}-v, --verbose{C.coff}    {C.clgy}Turns on extra ouput mode{C.coff}
+  {C.clm}-l, --log{C.coff}        {C.clgy}Enables logging to {C.clg}{DEF_LOGFILE}{C.coff}
+  {C.clm}-t, --test{C.coff}       {C.clgy}Performs module unit tests{C.coff}
+  {C.clm}--version{C.coff}        {C.clgy}Reports utility version{C.coff}
+  
 
 {C.cly}<inputfile>{C.off} a valid 6502 assembly
 {C.cly}<outputfile>{C.off} defaults to {C.clc}"<inputfile>.asm"{C.off} if not specified
@@ -565,17 +573,18 @@ def parseCommandLine():
       # Capture args, validate
       fileargs.append(arg);
 
-   if len(fileargs)==0:
+   if len(fileargs)==0 and not config.isTest():
       error("Please specify input 6502 binary file.")
 
-   # Input file is first arg; optional output file is second arg.
-   config.inputfile=fileargs[0]
-   if (len(fileargs)>1):
-      config.outputfile=fileargs[1]
-   else:
-      # TODO: This fails on a file with multiple '.' in filename
-      preamble=config.inputfile.split('.')
-      config.outputfile=preamble[0] + DEF_OUTEXT
+   if not config.isTest():
+      # Input file is first arg; optional output file is second arg.
+      config.inputfile=fileargs[0]
+      if (len(fileargs)>1):
+         config.outputfile=fileargs[1]
+      else:
+         # TODO: This fails on a file with multiple '.' in filename
+         preamble=config.inputfile.split('.')
+         config.outputfile=preamble[0] + DEF_OUTEXT
 
    # If we are here, all options and arguments have been parsed;
    # validate output file.
@@ -649,23 +658,25 @@ def main():
    parseCommandLine()
    
    # Validate file arguments
-   if (not os.path.isfile(config.inputfile)):
-      error(f"Input file does not exist: {C.cwh}{config.inputfile}")
-   if (os.path.isfile(config.outputfile) and (not config.isOverwrite)):
-      error(f"Output file already exists.\nTry using -o: {C.cwh}{config.outputfile}{C.off} ")
+   if not config.isTest():
+      if (not os.path.isfile(config.inputfile)):
+         error(f"Input file does not exist: {C.cwh}{config.inputfile}")
+      if (os.path.isfile(config.outputfile) and (not config.isOverwrite)):
+         error(f"Output file already exists.\nTry using -o: {C.cwh}{config.outputfile}{C.off} ")
 
    if (config.isDebug()):
       notex (config.toString(showPrivate=True))
 
    # Construct disassembler engine
    kdis6502=Kdis6502()
-   disassemble(kdis6502, config)
-   
 
    # DEBUGGING
    if config.isTest():
+      pip("Running unit tests...")
       doTest(kdis6502, config)
-   pass
+   else:
+      disassemble(kdis6502, config)
+
 
 # End of mainline
 
@@ -690,7 +701,7 @@ def doTest(kdis6502, config):
    for cb in testBytes:
       print()
       print(f"{C.clg}Control byte {C.cwh}0x{cb} {C.clg}has the following properties:")
-      print(f"{C.clg}Opcode:     {C.cwh}{kdis6502.getInstruction(cb)}")
+      print(f"{C.clg}Opcode:     {C.cwh}{kdis6502.getOpcode(cb)}")
       print(f"{C.clg}Definition: {C.cwh}{kdis6502.getDefinition(cb)}")
       print(f"{C.clg}Bytes:      {C.cwh}{kdis6502.getBytes(cb)}")
       print(f"{C.clg}Cycles:     {C.cwh}{kdis6502.getCycles(cb)}")
